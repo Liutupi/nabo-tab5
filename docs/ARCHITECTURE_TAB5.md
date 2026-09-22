@@ -193,7 +193,7 @@ NABO 状态映射：`idle/listen/think/speak/happy/wave/wake/tired/sleep/sad/ang
 
 | 阶段 | 交付 | 验证 |
 |---|---|---|
-| P0 环境与裸板 | IDF 5.5 + clone + 编译 `m5stack-tab5` 空桌面 | build / flash 有日志 |
+| P0 环境与裸板 | IDF 6.1 + 固定上游提交 + 编译 `nabo-tab5` | build / flash 有日志 |
 | P1 人机底座 | 显示+触摸+喇叭+麦+小智 idle/listen/speak + NABO 静态图 | 云端对话可用 |
 | P2 **Wi-Fi 设置配网** | 扫描/输密/连接/已存网络 + 状态栏 | 无手机可完成入网 |
 | P3 桌面产品 | Main/Apps/Settings 完整 + AudioFocus | 可当桌面终端 |

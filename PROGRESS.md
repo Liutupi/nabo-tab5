@@ -1,45 +1,32 @@
-# NABO-Tab5 推进状态
+# NABO Tab5 推进状态
 
-## 编译里程碑（2026-09-22）
-
-- **官方 `m5stack-tab5` 在 ESP-IDF 6.0.2 下编译成功**
-- 产物：`D:\tab5\xiaozhi-esp32\build\xiaozhi.bin`（0x37ea10，app 分区余 11%）
-- 合并镜像：`build\merged-binary.bin`
-- 源码树：`D:\tab5\xiaozhi-esp32`（含 `esp_lcd_st7121` / `st7123` 驱动，自动识别面板）
-- 本地补丁：`managed_components/espressif__esp_lvgl_port/.../esp_lvgl_port_disp.c`
-  DSI 回调改用 `on_refresh_done`（IDF 6 DSI 无 `on_frame_buf_complete`）
-- 激活环境：`C:\Espressif\esp-idf-v6.0.2\export.bat`
-- 编译命令：`python scripts\build.py m5stack/tab5 --name m5stack-tab5`
+> 2026-09-22 更新。更完整的恢复步骤与风险见 [HANDOFF.md](HANDOFF.md)。
 
 ## 已完成
 
-| 项 | 位置 |
-|---|---|
-| SD 资源审计 | `D:\tab5\SD_AUDIT.md` |
-| NABO 资源入 SD 布局 | `D:\开发板SD卡\nabo\`（37 PNG + manifest） |
-| macOS 垃圾清理 | calendar 下 14 个 `._*` / `.DS_Store` |
-| ST7121 板级骨架 | `D:\tab5\nabo-tab5\` |
-| 设置页配网状态机 + LVGL UI | `wifi_provision_ui.*` |
-| NaboFace 状态机 + 资源表 | `nabo_face.*` + `nabo_assets_gen.h` |
-| 桌面壳（Main/Xiaozhi/Settings/WiFi） | `desktop_ui.*` |
-| 分区草图 / Kconfig | `partitions/nabo_tab5.csv`、`sdkconfig.nabo-tab5.defaults` |
+- [x] 以固定 XiaoZhi 上游提交的官方 Tab5 实现替换早期板级骨架
+- [x] ILI9881C / ST7121 / ST7123 显示触摸自动探测
+- [x] ES8388 + ES7210 音频、摄像头、电源与背光板级实现
+- [x] P4 Rev < 3 与 P4X 双构建变体
+- [x] 16MB Flash A/B OTA 分区修正
+- [x] NABO 表情映射、首帧、one-shot 与播放节拍修复
+- [x] Wi-Fi 密码软键盘与异步连接结果接口
+- [x] 跨平台资源生成器、上游锁定文件和 overlay 安装脚本
+- [x] GitHub Actions 双变体构建与固件上传
 
-## 配网状态机
+## 自动验证
 
-`Idle → Scanning → List → InputPsk → Connecting → Success | Error`
+- [x] Python 脚本语法检查
+- [x] 资源 manifest 可重复生成 `nabo_assets_gen.h`
+- [x] overlay 可安装到固定 XiaoZhi 源码树
+- [x] XiaoZhi `build.py` 可识别 `nabo-tab5` / `nabo-tab5-p4x`
+- [ ] GitHub Actions 固件全量编译绿灯
+- [ ] Tab5 真机烧录与硬件验收
 
-对接：`WifiStation` 扫描/连接/NVS（接入 xiaozhi 树时填 lambda）。
+## 下一阶段
 
-## 下一步（需完整 xiaozhi 源码树 + ESP-IDF）
-
-1. clone `78/xiaozhi-esp32` 或你的 fork → 并入 `main/boards/nabo-tab5/`
-2. 从 M5GFX / ST7121 路径移植显示触摸驱动（注意 LCD_RST 经 PI4IOE）
-3. 实现 `Tab5AudioCodec`（ES8388+ES7210）
-4. 将 `DesktopUi::SetXiaozhiState` 接到 `Application`
-5. `idf.py set-target esp32p4` → `build` → 烧录
-
-## SD 待补
-
-- `PHOTOS/` 示例 1280×720 JPG
-- podcast：磁盘 mp3 与 `index.json`（80）数量不一致，需核对
-- 说明文档改为 Tab5/ST7121 版
+1. 将 `DesktopUi` 与 `NaboFace` 接入 `Application` / `LcdDisplay` 生命周期。
+2. 挂载 SD 并注册 LVGL 文件系统，使 `/sdcard/nabo/` PNG 可显示。
+3. 将 `WifiProvisionUi` 对接实际网络服务，并把扫描移出 LVGL 线程。
+4. 统一横竖屏、触摸坐标和摄像头方向。
+5. 真机验证显示、触摸、音频、C6、SD、摄像头和电源路径。

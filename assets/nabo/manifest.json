@@ -1,0 +1,16 @@
+{
+  "states": {
+    "idle": {"files": ["idle_01.png", "idle_02.png", "idle_03.png", "idle_04.png", "idle_05.png"], "fps": 2, "loop": true},
+    "listen": {"files": ["listen_01.png", "listen_02.png"], "fps": 1, "loop": false},
+    "think": {"files": ["think_01.png", "think_02.png"], "fps": 1, "loop": false},
+    "speak": {"files": ["speak_01.png", "speak_02.png", "speak_03.png", "speak_04.png", "speak_05.png", "speak_06.png"], "fps": 8, "loop": true},
+    "happy": {"files": ["happy_01.png", "happy_02.png"], "fps": 2, "loop": true},
+    "wave": {"files": ["wave_pose_01.png", "wave_pose_02.png", "wave_pose_03.png", "wave_01.png", "wave_02.png", "wave_03.png", "wave_04.png"], "fps": 6, "loop": false},
+    "wake": {"files": ["wake_01.png", "wake_02.png", "wake_03.png", "wake_04.png"], "fps": 4, "loop": false},
+    "blink": {"files": ["blink_01.png", "blink_02.png", "blink_03.png", "blink_04.png"], "fps": 10, "loop": false},
+    "tired": {"files": ["tired_01.png"], "fps": 1, "loop": false},
+    "sleep": {"files": ["sleep_01.png"], "fps": 1, "loop": false},
+    "sad": {"files": ["sad_01.png"], "fps": 1, "loop": false},
+    "angry": {"files": ["angry_01.png"], "fps": 1, "loop": false}
+  }
+}

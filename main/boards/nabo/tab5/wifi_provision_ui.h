@@ -3,8 +3,10 @@
 #include <cstdint>
 #include <functional>
 
-#ifdef __cplusplus
-extern "C" {
+#ifdef LV_LVGL_H_INCLUDE_SIMPLE
+#include "lvgl.h"
+#else
+#include "lvgl/lvgl.h"
 #endif
 
 typedef enum {
@@ -30,7 +32,7 @@ typedef struct {
  */
 class WifiProvisionUi {
  public:
-    using ConnectFn = std::function<bool(const char* ssid, const char* password)>;
+    using ConnectFn = std::function<void(const char* ssid, const char* password)>;
     using ScanFn = std::function<int(nabo_wifi_ap_t* out, int max_count)>;
     using StatusFn = std::function<void(const char* line)>;
 
@@ -42,6 +44,9 @@ class WifiProvisionUi {
     void SetScanner(ScanFn scan);
     void SetConnector(ConnectFn connect);
     void SetStatusSink(StatusFn status);
+
+    /** Complete an asynchronous connection request from the network task. */
+    void SetConnectionResult(bool connected, const char* detail = nullptr);
 
     /** Drive UI: call from LVGL timer / Application tick. */
     void Tick();
@@ -62,8 +67,13 @@ class WifiProvisionUi {
     ScanFn scan_;
     ConnectFn connect_;
     StatusFn status_;
-};
 
-#ifdef __cplusplus
-}
-#endif
+    lv_obj_t* root_ = nullptr;
+    lv_obj_t* status_label_ = nullptr;
+    lv_obj_t* list_ = nullptr;
+    lv_obj_t* scan_button_ = nullptr;
+    lv_obj_t* connect_button_ = nullptr;
+    lv_obj_t* password_textarea_ = nullptr;
+    lv_obj_t* keyboard_ = nullptr;
+    lv_obj_t* spinner_ = nullptr;
+};

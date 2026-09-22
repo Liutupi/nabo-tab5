@@ -97,4 +97,3 @@ static const nabo_clip_t kNaboClips[] = {
   { "angry", kNaboFrames_angry, 1, 1, 0 },
 };
 static const size_t kNaboClipCount = sizeof(kNaboClips)/sizeof(kNaboClips[0]);
-

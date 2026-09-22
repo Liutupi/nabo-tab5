@@ -1,170 +1,147 @@
-# HANDOFF — NABO-Tab5 / 小智（交接本）
+# HANDOFF — NABO Tab5 / 小智交接本
 
-> 日期：2026-09-22  
-> 目标：M5Stack **Tab5（ST7121）** 上的 NABO 桌面 + 小智 AI + 设置页 Wi-Fi 配网  
-> 开源仓：https://github.com/Liutupi/nabo-tab5  
-> 本地项目根：`D:\tab5`（MiMo 项目名 `tan5`）
+> 更新：2026-09-22
+>
+> 仓库：https://github.com/Liutupi/nabo-tab5
+>
+> 目标硬件：M5Stack Tab5（ESP32-P4 + ESP32-C6）
 
----
+## 1. 当前结论
 
-## 1. 一句话现状
+仓库已经从“板级草图”升级为**可安装到 XiaoZhi 源码树的板级 overlay**：
 
-**官方小智 `m5stack-tab5` 已在 ESP-IDF 6.0.2 编译通过**；NABO 资产已整理；板级骨架 / 配网 UI / NaboFace 接口已写好，**尚未并进 xiaozhi 树的完整构建**。
+- 硬件实现基于 XiaoZhi 当前官方 Tab5 板级代码，覆盖 ILI9881C、ST7121、ST7123 自动探测、触控、ES8388 + ES7210 音频、摄像头、充电与背光。
+- 支持 `nabo-tab5`（P4 Rev < 3）和 `nabo-tab5-p4x`（P4 Rev >= 3）两个构建变体。
+- 上游源码固定到 `upstream.json` 中的提交，CI 使用 ESP-IDF 6.1 构建两个变体，避免“今天能编、明天上游变了不能编”。
+- 修正了 16MB Flash 分区、LCD_RST 释放方式、NABO 表情错位/漏帧、首帧跳过、单帧一次性动画无法结束等问题。
+- 配网页增加软键盘、连接中状态和异步连接结果回调；资源生成器改为跨平台、可校验的命令行工具。
 
----
+边界也要说清楚：`NaboFace`、`DesktopUi` 和屏内 Wi-Fi 配网页目前已经能参与编译，但**还没有挂入 XiaoZhi 的实际页面生命周期与网络服务**；SD 卡挂载和 LVGL 文件系统桥也仍需完成。硬件显示、触摸、音频、C6 联网最终仍需真机烧录验收。
 
-## 2. 关键路径
+## 2. 固定基线
 
-| 用途 | 路径 |
+| 项目 | 基线 |
 |---|---|
-| 开源仓工作副本 | `D:\tab5\nabo-tab5\` |
-| GitHub | https://github.com/Liutupi/nabo-tab5 |
-| 官方小智源码树（本地，勿当开源仓） | `D:\tab5\xiaozhi-esp32\` |
-| 已编译固件 | `D:\tab5\xiaozhi-esp32\build\xiaozhi.bin`（3.49MB） |
-| 合并烧录镜像 | `D:\tab5\xiaozhi-esp32\build\merged-binary.bin`（10.85MB） |
-| NABO 资源（整理后） | `D:\tab5\nabo_assets\` |
-| SD 资源包（QDTech 风格） | `D:\开发板SD卡\`（含新建 `/nabo/`） |
-| SD 审计 | `D:\tab5\SD_AUDIT.md` |
-| 架构设计 | `D:\tab5\ARCHITECTURE_TAB5.md` |
-| ESP-IDF 6.0.2 | `C:\Espressif\esp-idf-v6.0.2\` |
-| 激活环境 | `C:\Espressif\esp-idf-v6.0.2\export.bat` |
+| XiaoZhi | `78/xiaozhi-esp32`，提交见 `upstream.json` |
+| ESP-IDF | 6.1（上游最低要求 6.0.1） |
+| LVGL | 由固定的 XiaoZhi 提交锁定 |
+| Flash | 16MB |
+| PSRAM | 32MB |
+| 屏幕 | 5 英寸 720×1280 MIPI-DSI；应用可另做横屏布局 |
+| 网络 | ESP32-C6 + esp-hosted SDIO |
 
----
+早期在 ESP-IDF 6.0.2 下成功编译官方 `m5stack-tab5` 的记录仅作为历史参考；当前应以 `upstream.json` 和 GitHub Actions 为准。
 
-## 3. 构建命令（可复现）
+## 3. 从零构建
 
-```bat
-cd /d D:\tab5\xiaozhi-esp32
-call C:\Espressif\esp-idf-v6.0.2\export.bat
-python scripts\build.py m5stack/tab5 --name m5stack-tab5
+需要 Git、Python 3、ESP-IDF 6.1。以下命令从 `nabo-tab5` 仓库根目录执行：
+
+```bash
+git clone https://github.com/78/xiaozhi-esp32.git work/xiaozhi-esp32
+git -C work/xiaozhi-esp32 checkout 4632dc51f0a5ad26e08542e131e6e48da41e4ff3
+
+python scripts/apply_to_xiaozhi.py work/xiaozhi-esp32
+
+cd work/xiaozhi-esp32
+python scripts/build.py nabo/tab5 --name nabo-tab5
+# P4 Rev >= 3 / P4X 设备改用：
+# python scripts/build.py nabo/tab5 --name nabo-tab5-p4x
 ```
 
-烧录（设备进下载模式后）：
+脚本会把 `main/boards/nabo/tab5/` 安装到 XiaoZhi，并自动注册 Kconfig 与 CMake。默认拒绝未锁定的上游提交；升级上游时应先评估差异，再更新 `upstream.json`。重复覆盖测试树可加 `--force`。
 
-```bat
-idf.py -p COMx flash
-:: 或
-idf.py -p COMx flash monitor
+烧录：
+
+```bash
+cd work/xiaozhi-esp32
+idf.py -p <串口> flash monitor
 ```
 
-下载模式：长按 Reset 约 2 秒，绿灯快闪后松开。
+设备进入下载模式：长按 Reset 约 2 秒，绿灯快闪后松开。
 
----
+## 4. 本次完成内容
 
-## 4. 硬件与驱动
+### 板级与构建
 
-- Tab5：ESP32-P4 + ESP32-C6 Wi-Fi 6，16MB Flash，32MB PSRAM，5" 1280×720 MIPI-DSI
-- 用户设备屏幕驱动：**ST7121**（2025-10 后 TDDI 一体触控）
-- 官方 `main/boards/m5stack/tab5/` 已含 `esp_lcd_st7121.c` / `esp_lcd_st7123.c`，按触控固件版本自动选择
-- LCD_RST 经 PI4IOE：低=推挽/开漏，高=输入上拉（文档要求，避免 I2C 不稳）
-- 硬件资料：https://docs.m5stack.com/en/core/Tab5
+- [x] 板目录规范化为 `main/boards/nabo/tab5/`
+- [x] 接入官方 Tab5 显示、触摸、音频、摄像头和电源管理实现
+- [x] ST7121 / ST7123 / ILI9881C 自动探测
+- [x] 按 M5Stack 要求，LCD_RST 拉低复位后释放为输入上拉，降低共享 I2C 不稳定风险
+- [x] 双 P4 版本构建配置
+- [x] 固定上游提交与 ESP-IDF 版本
+- [x] GitHub Actions 双变体编译与固件产物上传
 
----
+### 存储与资源
 
-## 5. 已完成清单
+- [x] 分区修正为 16MB：NVS + OTA data + 双 4MB OTA 槽 + 8MB assets
+- [x] `assets/nabo/manifest.json` 成为表情资源表的唯一来源
+- [x] 资源生成脚本支持任意平台、输出路径和路径前缀，并校验非法文件名、FPS 与状态冲突
+- [x] 表情按名字映射，不再因 `blink` 插入顺序导致 tired/sleep/sad/angry 错位
+- [x] 修复首次 idle 不显示、非循环动画末帧反复刷新和单帧 one-shot 不结束
 
-### 5.1 编译链
-- [x] clone `78/xiaozhi-esp32` → `D:\tab5\xiaozhi-esp32`
-- [x] ESP-IDF 6.0.2 + tools（esp32p4 / riscv32）
-- [x] **`m5stack-tab5` 完整编译成功**，app 余 11%
-- [x] 本地补丁：`esp_lvgl_port` DSI 回调 `on_frame_buf_complete` → `on_refresh_done`（IDF 6 DSI 字段名）
+### 配网界面
 
-### 5.2 NABO 资产
-- [x] 归档到 `nabo_assets/full|bust` + `manifest.json` + `preview_contact_sheet.png`
-- [x] 序列：blink 4 帧、wave 4 帧、wake 4 帧
-- [x] 静态：idle/listen/think/speak/happy/tired/sleep/sad/angry
-- [x] SD 布局：`D:\开发板SD卡\nabo\`
-- [x] `scripts/gen_nabo_lvgl.py` → `nabo_assets_gen.h`
+- [x] Wi-Fi 列表、密码框、LVGL 软键盘和连接 spinner
+- [x] 连接操作改为异步发起，由网络任务调用 `SetConnectionResult()` 回写结果
+- [x] 隐藏页面或连接结束时清空密码缓冲
 
-### 5.3 产品骨架（`nabo-tab5` 仓内）
-- [x] `config.h`（ST7121 / P4 引脚）
-- [x] `wifi_provision_ui.*` 设置页配网状态机 + LVGL UI
-- [x] `nabo_face.*` 表情状态机
-- [x] `desktop_ui.*` 页面壳
-- [x] `nabo_tab5_board.*` Board 组装草图
-- [x] 分区 `partitions/nabo_tab5.csv`、Kconfig 默认值
+## 5. 下一步（按优先级）
 
-### 5.4 文档
-- [x] `ARCHITECTURE_TAB5.md` 分层架构（借鉴 QDTech）
-- [x] `SD_AUDIT.md` SD 资源缺口与优化
-- [x] `docs/NABO_INTEGRATION.md` 接口草图
-- [x] 本 HANDOFF
+### P0：真机验收
 
----
+1. 根据 Tab5 背贴/芯片版本选择 `nabo-tab5` 或 `nabo-tab5-p4x`。
+2. 烧录 CI 产物，记录启动串口日志和面板探测结果。
+3. 验证显示、触摸坐标、背光、扬声器、双麦、摄像头、ESP32-C6 联网与休眠唤醒。
+4. 特别观察 ST7121/ST7123 设备上 I2C 是否仍出现复位或超时。
 
-## 6. 未完成 / 下一步（按优先级）
+### P1：接通产品层
 
-### P0 — 硬件验证
-1. Tab5 进下载模式，烧录 `xiaozhi.bin` 或 `merged-binary.bin`
-2. 确认 ST7121 显示、触摸、扬声器、麦克风、Wi-Fi C6
-3. 记录串口 log：`SKU=m5stack-tab5`、面板探测、Hosted Wi-Fi
+1. 把 `DesktopUi` 挂到官方 `LcdDisplay` 的创建与销毁生命周期。
+2. 把 `Application` 的 listening/thinking/speaking/error 状态送给 `NaboFace::OnDeviceState()`。
+3. 挂载 microSD，并为 LVGL 注册文件系统驱动；确认 `/sdcard/nabo/*.png` 能被解码显示。
+4. 将 `WifiProvisionUi` 的扫描/连接回调接到 XiaoZhi 网络服务，并把 LVGL 更新切回 UI 线程。
+5. 将同步扫描改成工作线程任务，避免扫描期间触摸和动画短暂停顿。
 
-### P1 — 并入 NABO 板级
-1. 将 `nabo-tab5/main/boards/nabo-tab5/` 合并进 `xiaozhi-esp32/main/boards/nabo/tab5/`（注意 build.py 要求 `manufacturer/board` 目录）
-2. 注册 `CONFIG_BOARD_TYPE_NABO_TAB5` 到 `Kconfig.projbuild` + `main/CMakeLists.txt`
-3. 以官方 `m5stack_tab5.cc` 为基座，挂 `NaboFace` + `WifiProvisionUi`
-4. 用 `python scripts\build.py nabo/tab5 --name nabo-tab5` 出独立 SKU 固件
+### P2：大屏体验与可靠性
 
-### P2 — 产品功能
-1. 设置页 Wi-Fi：对接 `WifiStation` 扫描/连接/NVS（Wi-Fi 6 经 C6/esp_hosted）
-2. NABO 表情：读 `/sdcard/nabo/manifest.json` 或嵌入 `nabo_assets_gen.h`
-3. `DesktopUi::SetXiaozhiState` → Application 状态机
-4. SD：`radio.json`、PHOTOS 示例、podcast 索引核对（80 vs 160 mp3）
+1. 明确竖屏 720×1280 或横屏 1280×720 产品方向，统一显示旋转、触摸变换和摄像头方向。
+2. 表情资源按实际显示尺寸压缩，优先测试 RGB565/分块解码，避免 PNG 解码造成帧抖动。
+3. 加入 SD 缺失、资源损坏、C6 未启动、网络连接超时等可见降级页面。
+4. 补硬件在环冒烟测试与版本信息页（固件提交、上游提交、面板类型、P4 revision）。
 
-### P3 — 可选
-- 电台 / 照片 / 播客 / 益智（QDTech 服务层可搬）
-- BMI270 Shake Lab（Tab5 同款 IMU）
-- OTA 独立通道
+## 6. 已知限制与坑
 
----
+- 这是 overlay 仓库，不是可直接运行 `idf.py build` 的完整 ESP-IDF 工程。
+- `LoadManifest()` 当前只探测 SD manifest 是否存在，运行时 JSON 覆盖尚未实现；编译期资源表来自生成头文件。
+- `lv_image_set_src()` 使用 `/sdcard/...` 前，必须先完成 SD 挂载与 LVGL 文件系统桥；否则表情路径存在但图片不会显示。
+- 屏内 Wi-Fi 扫描回调当前仍是同步接口；连接接口已异步化。
+- P4 没有原生 Wi-Fi。联网问题优先检查 C6 电源、esp-hosted 固件与 SDIO 引脚，不要只查普通 ESP Wi-Fi 配置。
+- 不要提交 `build/`、`managed_components/`、`sdkconfig` 或大体积 SD 媒体包。
 
-## 7. 必须知道的坑
+## 7. 资源与状态映射
 
-1. **`esp_lvgl_port` 与 IDF 6 DSI**：已在 managed_components 本地改过；`idf.py reconfigure` 若重拉组件可能被覆盖，需重打补丁或改用兼容版本。
-2. **屏幕批次**：旧固件只适配 ILI9881C+GT911；ST7121/ST7123 需新板级（官方 tab5 已支持）。
-3. **`build.py` 板型名**：用 `m5stack/tab5`（目录名），不是 `m5stack-tab5`；variant 用 `--name m5stack-tab5`。
-4. **自定义板目录**：需放在 `main/boards/<manufacturer>/<board>/`，且 `config.json` 有 `"type"`、`"manufacturer"`。
-5. **勿把** `managed_components/`、`build/`、`sdkconfig` 当源码提交到开源仓（`.gitignore` 已配）。
-6. **SD 大文件**：3.7GB 播客等不要进 Git，只提交目录约定。
-7. P4 无原生 Wi-Fi：配网失败时优先查 C6 / esp_hosted / SDIO。
-
----
-
-## 8. NABO 资产状态映射（摘要）
-
-| 设备状态 | 资源 | 帧数 |
+| XiaoZhi / 产品状态 | NABO clip | 说明 |
 |---|---|---|
-| idle | full/idle_* | 5 |
-| listening | full/listen_* | 2 |
-| thinking | full/think_* | 2 |
-| speaking | full/speak_* | 6（口型循环） |
-| happy | full/happy_* | 2 |
-| wave | full/wave_* + wave_pose_* | 4+3 |
-| wake | full/wake_* | 4 |
-| blink | bust/blink_* | 4（idle 叠加） |
-| tired / sleep / sad / angry | 各 1 张 | 定格 |
+| idle | idle | 循环 |
+| listening | listen | 定格在末帧 |
+| thinking / connecting / upgrading | think | 定格在末帧 |
+| speaking | speak | 口型循环 |
+| error | sad | 定格 |
+| 主动动作 | wave / wake | one-shot 后回到目标状态 |
 
-`angry` 为用户确认接受的 pout 图（视觉偏难过）；可后期替换 `nabo_angry.png`。
+`blink` 是辅助片段，不占用主情绪枚举位置。
 
----
+## 8. 验收记录模板
 
-## 9. Git 状态（开源仓）
-
-- 仓库：`Liutupi/nabo-tab5`（public，MIT）
-- 分支：`main`
-- 本交接提交：HANDOFF + PROGRESS + 构建里程碑说明
-- 作者身份：`Liutupi@users.noreply.github.com`（未改全局 git config）
-
-**本地 `D:\tab5\xiaozhi-esp32` 与 `C:\Espressif\` 不在该仓库内**，需按第 3 节命令在目标机器重建。
-
----
-
-## 10. 快速恢复清单（换机器）
-
-1. 装 ESP-IDF 6.0.2（`install.bat esp32p4`）
-2. clone `https://github.com/78/xiaozhi-esp32.git`（或保留本地树）
-3. clone `https://github.com/Liutupi/nabo-tab5.git`
-4. 把 `nabo-tab5` 板级合入 xiaozhi（见 6.P1）
-5. 打 lvgl_port DSI 补丁（见 7.1）或等上游修复
-6. `build.py m5stack/tab5 --name m5stack-tab5` 先通官方板
-7. SD 卡按 `docs/sd-layout/` + `D:\开发板SD卡` 结构准备
+```text
+设备背贴/批次：
+构建变体：nabo-tab5 / nabo-tab5-p4x
+固件提交：
+面板探测：ILI9881C / ST7121 / ST7123
+显示与触摸：
+扬声器/双麦：
+摄像头：
+C6/联网：
+SD/NABO 表情：
+异常串口日志：
+```

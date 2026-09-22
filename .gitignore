@@ -6,6 +6,7 @@ sdkconfig.old
 .idea/
 *.pyc
 __pycache__/
+/work/
 .DS_Store
 ._*
 dependencies.lock

@@ -1,0 +1,57 @@
+name: Build NABO Tab5
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:v6.1
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [nabo-tab5, nabo-tab5-p4x]
+
+    steps:
+      - name: Checkout NABO overlay
+        uses: actions/checkout@v4
+
+      - name: Check scripts
+        shell: bash
+        run: |
+          python -m py_compile scripts/apply_to_xiaozhi.py scripts/gen_nabo_lvgl.py
+          python scripts/gen_nabo_lvgl.py assets/nabo/manifest.json --output /tmp/nabo_assets_gen.h
+          diff -u main/boards/nabo/tab5/nabo_assets_gen.h /tmp/nabo_assets_gen.h
+
+      - name: Checkout pinned XiaoZhi
+        shell: bash
+        run: |
+          UPSTREAM_REPOSITORY="$(python -c 'import json; print(json.load(open("upstream.json"))["repository"])')"
+          UPSTREAM_COMMIT="$(python -c 'import json; print(json.load(open("upstream.json"))["commit"])')"
+          git clone --filter=blob:none --no-checkout "$UPSTREAM_REPOSITORY" work/xiaozhi-esp32
+          git -C work/xiaozhi-esp32 checkout --detach "$UPSTREAM_COMMIT"
+
+      - name: Apply NABO board overlay
+        run: python scripts/apply_to_xiaozhi.py work/xiaozhi-esp32
+
+      - name: Build firmware
+        shell: bash
+        run: |
+          source "$IDF_PATH/export.sh"
+          cd work/xiaozhi-esp32
+          python scripts/build.py nabo/tab5 --name "${{ matrix.variant }}"
+
+      - name: Upload merged firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.variant }}-${{ github.sha }}
+          path: work/xiaozhi-esp32/build/merged-binary.bin
+          if-no-files-found: error

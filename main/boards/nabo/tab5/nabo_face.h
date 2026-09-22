@@ -47,6 +47,7 @@ class NaboFace {
 
     NaboEmotion current_ = NaboEmotion::kIdle;
     NaboEmotion pending_ = NaboEmotion::kIdle;
+    bool initialized_ = false;
     bool one_shot_ = false;
     Clip clips_[static_cast<size_t>(NaboEmotion::kCount)];
     size_t frame_index_ = 0;
