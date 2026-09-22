@@ -1,0 +1,15 @@
+{
+    "target": "esp32p4",
+    "builds": [
+        {
+            "name": "nabo-tab5",
+            "sdkconfig_append": [
+                "CONFIG_BOARD_TYPE_NABO_TAB5=y",
+                "CONFIG_NABO_PANEL_ST7121=y",
+                "CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y",
+                "CONFIG_PARTITION_TABLE_CUSTOM=y",
+                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/nabo_tab5.csv\""
+            ]
+        }
+    ]
+}
