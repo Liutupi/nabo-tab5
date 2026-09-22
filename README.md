@@ -35,6 +35,12 @@ scripts/                 NABO 资源 → C 头文件生成
 docs/                    架构、SD 审计、接入说明
 ```
 
+## 交接 / Handoff
+
+完整工作状态、构建命令、路径与下一步见 **[HANDOFF.md](HANDOFF.md)**。
+
+**编译里程碑（2026-09-22）：** 官方 `m5stack-tab5` 已在 ESP-IDF 6.0.2 编译成功（`xiaozhi.bin` 3.49MB，app 余 11%），含 ST7121 驱动。
+
 ## 快速开始（接入 xiaozhi 树后）
 
 ```bash

@@ -1,5 +1,16 @@
 # NABO-Tab5 推进状态
 
+## 编译里程碑（2026-09-22）
+
+- **官方 `m5stack-tab5` 在 ESP-IDF 6.0.2 下编译成功**
+- 产物：`D:\tab5\xiaozhi-esp32\build\xiaozhi.bin`（0x37ea10，app 分区余 11%）
+- 合并镜像：`build\merged-binary.bin`
+- 源码树：`D:\tab5\xiaozhi-esp32`（含 `esp_lcd_st7121` / `st7123` 驱动，自动识别面板）
+- 本地补丁：`managed_components/espressif__esp_lvgl_port/.../esp_lvgl_port_disp.c`
+  DSI 回调改用 `on_refresh_done`（IDF 6 DSI 无 `on_frame_buf_complete`）
+- 激活环境：`C:\Espressif\esp-idf-v6.0.2\export.bat`
+- 编译命令：`python scripts\build.py m5stack/tab5 --name m5stack-tab5`
+
 ## 已完成
 
 | 项 | 位置 |

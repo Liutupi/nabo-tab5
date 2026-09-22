@@ -1,14 +1,21 @@
 {
+    "manufacturer": "nabo",
+    "type": "nabo-tab5",
     "target": "esp32p4",
     "builds": [
         {
             "name": "nabo-tab5",
             "sdkconfig_append": [
-                "CONFIG_BOARD_TYPE_NABO_TAB5=y",
-                "CONFIG_NABO_PANEL_ST7121=y",
-                "CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y",
-                "CONFIG_PARTITION_TABLE_CUSTOM=y",
-                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/nabo_tab5.csv\""
+                "CONFIG_BOARD_TYPE_M5STACK_CORE_TAB5=y",
+                "CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_CMD_SLOT_1=13",
+                "CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_CLK_SLOT_1=12",
+                "CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D0_SLOT_1=11",
+                "CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D1_4BIT_BUS_SLOT_1=10",
+                "CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D2_4BIT_BUS_SLOT_1=9",
+                "CONFIG_ESP_HOSTED_PRIV_SDIO_PIN_D3_4BIT_BUS_SLOT_1=8",
+                "CONFIG_ESP_HOSTED_MEMPOOL_PREFER_SPIRAM=y",
+                "CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y",
+                "CONFIG_ESP32P4_REV_MIN_100=y"
             ]
         }
     ]
