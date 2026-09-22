@@ -1,5 +1,7 @@
 # NABO Tab5
 
+[![Build NABO Tab5](https://github.com/Liutupi/nabo-tab5/actions/workflows/build.yml/badge.svg)](https://github.com/Liutupi/nabo-tab5/actions/workflows/build.yml)
+
 面向 M5Stack Tab5 的 XiaoZhi 板级 overlay：在官方硬件支持之上扩展 NABO 角色桌面、屏内 Wi-Fi 配网和大屏本地应用。
 
 ## 当前能力
@@ -9,6 +11,8 @@
 - NABO 表情状态机与可重复生成的资源索引
 - 带 Wi-Fi 列表、密码软键盘和异步连接结果的设置页组件
 - 固定 XiaoZhi 上游提交，GitHub Actions 使用 ESP-IDF 6.1 编译两个固件变体
+
+2026-09-22 的首次双变体 CI 已通过；`nabo-tab5` app 为 `0x387410` 字节，`nabo-tab5-p4x` 为 `0x38d030` 字节，两个 4MB app 分区都保留约 10% 空间。
 
 产品层尚在接线阶段：桌面、表情和屏内配网页仍需挂到 XiaoZhi 的实际页面、SD/LVGL 文件系统和网络服务。详细状态见 [HANDOFF.md](HANDOFF.md)。
 

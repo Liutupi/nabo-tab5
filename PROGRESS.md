@@ -20,7 +20,7 @@
 - [x] 资源 manifest 可重复生成 `nabo_assets_gen.h`
 - [x] overlay 可安装到固定 XiaoZhi 源码树
 - [x] XiaoZhi `build.py` 可识别 `nabo-tab5` / `nabo-tab5-p4x`
-- [ ] GitHub Actions 固件全量编译绿灯
+- [x] GitHub Actions 固件全量编译绿灯（`nabo-tab5` / `nabo-tab5-p4x`）
 - [ ] Tab5 真机烧录与硬件验收
 
 ## 下一阶段

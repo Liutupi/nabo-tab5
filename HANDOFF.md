@@ -15,6 +15,7 @@
 - 上游源码固定到 `upstream.json` 中的提交，CI 使用 ESP-IDF 6.1 构建两个变体，避免“今天能编、明天上游变了不能编”。
 - 修正了 16MB Flash 分区、LCD_RST 释放方式、NABO 表情错位/漏帧、首帧跳过、单帧一次性动画无法结束等问题。
 - 配网页增加软键盘、连接中状态和异步连接结果回调；资源生成器改为跨平台、可校验的命令行工具。
+- GitHub Actions [运行 #35727681284](https://github.com/Liutupi/nabo-tab5/actions/runs/35727681284) 已验证两个变体均可在 ESP-IDF 6.1 下完整编译并上传合并固件。
 
 边界也要说清楚：`NaboFace`、`DesktopUi` 和屏内 Wi-Fi 配网页目前已经能参与编译，但**还没有挂入 XiaoZhi 的实际页面生命周期与网络服务**；SD 卡挂载和 LVGL 文件系统桥也仍需完成。硬件显示、触摸、音频、C6 联网最终仍需真机烧录验收。
 
@@ -70,6 +71,13 @@ idf.py -p <串口> flash monitor
 - [x] 双 P4 版本构建配置
 - [x] 固定上游提交与 ESP-IDF 版本
 - [x] GitHub Actions 双变体编译与固件产物上传
+
+首次绿色构建记录：
+
+| 变体 | `xiaozhi.bin` | 4MB app 分区余量 | `merged-binary.bin` |
+|---|---:|---:|---:|
+| `nabo-tab5` | `0x387410` | `0x68bf0`（10%） | `0xad8f49` |
+| `nabo-tab5-p4x` | `0x38d030` | `0x62fd0`（10%） | `0xad8f49` |
 
 ### 存储与资源
 
