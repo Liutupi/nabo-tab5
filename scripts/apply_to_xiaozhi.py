@@ -48,9 +48,10 @@ def insert_after(path: Path, anchor: str, addition: str) -> None:
 
 
 def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
-    """Use the upstream Rev < 3 ISP library as a local IDF component."""
+    """Use the upstream Rev < 3 ISP library and a hardware-safe SC202CS profile."""
     component = lock["component_overrides"]["espressif/esp_ipa"]
     target = checkout / "components/espressif__esp_ipa"
+    profile_target = checkout / "main/boards/nabo/tab5/sc202cs_ipa.json"
     if target.exists() and not force:
         raise SystemExit(f"target already exists: {target}; pass --force to replace it")
 
@@ -61,7 +62,8 @@ def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
              component["repository"], str(source)],
             check=True,
         )
-        subprocess.run(["git", "sparse-checkout", "set", component["path"]],
+        subprocess.run(["git", "sparse-checkout", "set", component["path"],
+                        "esp_cam_sensor/sensors/sc202cs/cfg"],
                        cwd=source, check=True)
         subprocess.run(["git", "checkout", "--detach", component["commit"]],
                        cwd=source, check=True)
@@ -73,7 +75,23 @@ def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
             shutil.rmtree(target)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(component_source, target)
+        profile_source = source / "esp_cam_sensor/sensors/sc202cs/cfg/sc202cs_default.json"
+        profile = json.loads(profile_source.read_text(encoding="utf-8"))
+        ccm_table = profile["SC202CS"]["acc"]["ccm"]["table"]
+        low_temp_matrix = next(item["matrix"] for item in ccm_table if item["color_temp"] == 2292)
+        if low_temp_matrix[6:9] != [-0.7768, -2.7677, 4.5445]:
+            raise RuntimeError("pinned SC202CS CCM profile changed; review correction before building")
+        # Keep the blue-output row summing to 1 while bringing its peak below
+        # the ESP32-P4 CCM hardware limit. This avoids repeated rejected writes.
+        peak = 3.9
+        scale = (peak - 1.0) / (low_temp_matrix[8] - 1.0)
+        low_temp_matrix[6] *= scale
+        low_temp_matrix[7] *= scale
+        low_temp_matrix[8] = peak
+        profile_target.write_text(json.dumps(profile, ensure_ascii=False, separators=(",", ":")) + "\n",
+                                  encoding="utf-8")
     print(f"Installed ESP-IPA Rev < 3 fix {component['commit']} into {target}")
+    print(f"Installed SC202CS CCM profile into {profile_target}")
 
 
 def git_head(checkout: Path) -> str:
