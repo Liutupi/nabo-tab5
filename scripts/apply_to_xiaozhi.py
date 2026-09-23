@@ -48,12 +48,14 @@ def insert_after(path: Path, anchor: str, addition: str) -> None:
 
 
 def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
-    """Use the upstream Rev < 3 ISP library and a hardware-safe SC202CS profile."""
+    """Install the Rev < 3 ISP library and bound SC202CS CCM hardware writes."""
     component = lock["component_overrides"]["espressif/esp_ipa"]
     target = checkout / "components/espressif__esp_ipa"
+    video_target = checkout / "components/espressif__esp_video"
     profile_target = checkout / "main/boards/nabo/tab5/sc202cs_ipa.json"
-    if target.exists() and not force:
-        raise SystemExit(f"target already exists: {target}; pass --force to replace it")
+    for component_target in (target, video_target):
+        if component_target.exists() and not force:
+            raise SystemExit(f"target already exists: {component_target}; pass --force to replace it")
 
     with tempfile.TemporaryDirectory(prefix="nabo-esp-ipa-") as temp_dir:
         source = Path(temp_dir) / "esp-video-components"
@@ -62,7 +64,7 @@ def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
              component["repository"], str(source)],
             check=True,
         )
-        subprocess.run(["git", "sparse-checkout", "set", component["path"],
+        subprocess.run(["git", "sparse-checkout", "set", component["path"], "esp_video",
                         "esp_cam_sensor/sensors/sc202cs/cfg"],
                        cwd=source, check=True)
         subprocess.run(["git", "checkout", "--detach", component["commit"]],
@@ -75,6 +77,41 @@ def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
             shutil.rmtree(target)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(component_source, target)
+
+        video_source = source / "esp_video"
+        if video_target.exists():
+            shutil.rmtree(video_target)
+        shutil.copytree(video_source, video_target)
+        video_manifest = video_target / "idf_component.yml"
+        manifest_text = video_manifest.read_text(encoding="utf-8")
+        if manifest_text.count("    override_path: ../esp_cam_sensor\n") != 1 or \
+                manifest_text.count("    override_path: ../esp_ipa\n") != 1:
+            raise RuntimeError("pinned esp_video manifest changed; review local component dependencies")
+        manifest_text = manifest_text.replace("    override_path: ../esp_cam_sensor\n", "")
+        manifest_text = manifest_text.replace("    override_path: ../esp_ipa\n", "")
+        video_manifest.write_text(manifest_text, encoding="utf-8")
+        isp_source = video_target / "src/device/esp_video_isp_device.c"
+        isp_text = isp_source.read_text(encoding="utf-8")
+        anchor = "#endif\n}\n\nstatic esp_err_t isp_start_ccm(struct isp_video *isp_video)"
+        correction = """#endif
+    /* The Rev 1.x P4 applies AWB gains inside CCM; bound the final values to
+     * the ISP register range even when the sensor's profile is valid alone. */
+    for (int row = 0; row < ISP_CCM_DIMENSION; row++) {
+        for (int col = 0; col < ISP_CCM_DIMENSION; col++) {
+            if (ccm_config->matrix[row][col] > 3.99f) {
+                ccm_config->matrix[row][col] = 3.99f;
+            } else if (ccm_config->matrix[row][col] < -3.99f) {
+                ccm_config->matrix[row][col] = -3.99f;
+            }
+        }
+    }
+}
+
+static esp_err_t isp_start_ccm(struct isp_video *isp_video)"""
+        if isp_text.count(anchor) != 1:
+            raise RuntimeError("pinned esp_video CCM implementation changed; review correction")
+        isp_source.write_text(isp_text.replace(anchor, correction, 1), encoding="utf-8")
+
         profile_source = source / "esp_cam_sensor/sensors/sc202cs/cfg/sc202cs_default.json"
         profile = json.loads(profile_source.read_text(encoding="utf-8"))
         ccm_table = profile["SC202CS"]["acc"]["ccm"]["table"]
@@ -91,6 +128,7 @@ def install_esp_ipa_component(checkout: Path, lock: dict, force: bool) -> None:
         profile_target.write_text(json.dumps(profile, ensure_ascii=False, separators=(",", ":")) + "\n",
                                   encoding="utf-8")
     print(f"Installed ESP-IPA Rev < 3 fix {component['commit']} into {target}")
+    print(f"Installed bounded ISP CCM implementation into {video_target}")
     print(f"Installed SC202CS CCM profile into {profile_target}")
 
 
