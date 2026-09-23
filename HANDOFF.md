@@ -31,6 +31,11 @@
 | 屏幕 | 5 英寸 720×1280 MIPI-DSI；应用可另做横屏布局 |
 | 网络 | ESP32-C6 + esp-hosted SDIO |
 
+`apply_to_xiaozhi.py` 还会锁定 Espressif 的 `esp_ipa` 修复提交
+`5ec4d12101d7308dd9f826ff211312387f63e22d`。原因是组件仓库中的 2.4.0
+发布包尚未包含 ESP-IDF 6.x + P4 Rev 1.x 专用 ISP 库，启用 SC202CS 时会执行
+Rev 3+ 指令并触发 `Illegal instruction`。
+
 早期在 ESP-IDF 6.0.2 下成功编译官方 `m5stack-tab5` 的记录仅作为历史参考；当前应以 `upstream.json` 和 GitHub Actions 为准。
 
 ## 3. 从零构建
@@ -124,6 +129,7 @@ idf.py -p <串口> flash monitor
 - `lv_image_set_src()` 使用 `/sdcard/...` 前，必须先完成 SD 挂载与 LVGL 文件系统桥；否则表情路径存在但图片不会显示。
 - 屏内 Wi-Fi 扫描回调当前仍是同步接口；连接接口已异步化。
 - P4 没有原生 Wi-Fi。联网问题优先检查 C6 电源、esp-hosted 固件与 SDIO 引脚，不要只查普通 ESP Wi-Fi 配置。
+- 在 Espressif 发布包含 less-v3 ISP 库的新版本前，不要移除 `esp_ipa` Git override；升级后需在 Rev 1.3 真机上复测 SC202CS 初始化。
 - 不要提交 `build/`、`managed_components/`、`sdkconfig` 或大体积 SD 媒体包。
 
 ## 7. 资源与状态映射

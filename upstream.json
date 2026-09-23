@@ -1,5 +1,13 @@
 {
   "repository": "https://github.com/78/xiaozhi-esp32.git",
   "commit": "4632dc51f0a5ad26e08542e131e6e48da41e4ff3",
-  "idf": "6.1"
+  "idf": "6.1",
+  "component_overrides": {
+    "espressif/esp_ipa": {
+      "repository": "https://github.com/espressif/esp-video-components.git",
+      "path": "esp_ipa",
+      "commit": "5ec4d12101d7308dd9f826ff211312387f63e22d",
+      "reason": "ESP-IDF 6.x support for ESP32-P4 Rev < 3"
+    }
+  }
 }

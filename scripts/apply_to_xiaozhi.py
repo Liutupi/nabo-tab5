@@ -14,6 +14,21 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 BOARD_SOURCE = REPO_ROOT / "main/boards/nabo/tab5"
 UPSTREAM_LOCK = REPO_ROOT / "upstream.json"
 
+ESP_IPA_OVERRIDE = '''
+
+# Rev 1.x ESP32-P4 needs the less-v3 ISP binary on ESP-IDF 6.x. The 2.4.0
+# registry archive predates the upstream fix and otherwise crashes at camera
+# initialization with an illegal sh2add instruction.
+overrides:
+  - espressif/esp_ipa:
+      with:
+        esp_ipa:
+          git: https://github.com/espressif/esp-video-components.git
+          path: esp_ipa
+          version: 5ec4d12101d7308dd9f826ff211312387f63e22d
+      reason: "Use Espressif's ESP-IDF 6.x P4 Rev < 3 ISP library fix"
+'''
+
 KCONFIG_ANCHOR = '''    config BOARD_TYPE_M5STACK_CORE_TAB5
         bool "M5Stack Tab5"
         depends on IDF_TARGET_ESP32P4
@@ -46,6 +61,17 @@ def insert_after(path: Path, anchor: str, addition: str) -> None:
     path.write_text(text.replace(anchor, anchor + addition, 1), encoding="utf-8")
 
 
+def install_esp_ipa_override(path: Path) -> None:
+    text = path.read_text(encoding="utf-8")
+    if "5ec4d12101d7308dd9f826ff211312387f63e22d" in text:
+        return
+    if "\noverrides:" in text:
+        raise RuntimeError(
+            f"{path} already declares dependency overrides; merge the ESP-IPA override manually"
+        )
+    path.write_text(text.rstrip() + ESP_IPA_OVERRIDE + "\n", encoding="utf-8")
+
+
 def git_head(checkout: Path) -> str:
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -74,7 +100,12 @@ def main() -> None:
     checkout = args.checkout.resolve()
     lock = json.loads(UPSTREAM_LOCK.read_text(encoding="utf-8"))
 
-    for relative in ("main/Kconfig.projbuild", "main/CMakeLists.txt", "scripts/build.py"):
+    for relative in (
+        "main/Kconfig.projbuild",
+        "main/CMakeLists.txt",
+        "main/idf_component.yml",
+        "scripts/build.py",
+    ):
         if not (checkout / relative).is_file():
             raise SystemExit(f"not a XiaoZhi checkout: missing {relative}")
 
@@ -95,6 +126,7 @@ def main() -> None:
 
     insert_after(checkout / "main/Kconfig.projbuild", KCONFIG_ANCHOR, KCONFIG_NABO)
     insert_after(checkout / "main/CMakeLists.txt", CMAKE_ANCHOR, CMAKE_NABO)
+    install_esp_ipa_override(checkout / "main/idf_component.yml")
 
     print(f"Installed NABO Tab5 overlay into {checkout}")
     print("Build Rev < 3: python scripts/build.py nabo/tab5 --name nabo-tab5")
