@@ -1,6 +1,6 @@
 # HANDOFF — NABO Tab5 / 小智交接本
 
-> 更新：2026-09-23
+> 更新：2026-09-23（当晚补记：本地真机滑动/点触联调）
 >
 > 仓库：https://github.com/Liutupi/nabo-tab5
 >
@@ -25,7 +25,7 @@
 - `nabo-tab5` 固件已烧录到 ESP32-P4 Rev 1.3 真机并完成启动冒烟测试，见第 8 节。
 - SC202CS 色彩矩阵越界已通过低色温配置修正和 ISP 最终写入限幅解决；真机复测抓帧成功且不再报错。
 
-边界也要说清楚：`NaboFace`、`DesktopUi` 和屏内 Wi-Fi 配网页目前已经能参与编译，但**还没有挂入 XiaoZhi 的实际页面生命周期与网络服务**；SD 卡挂载和 LVGL 文件系统桥也仍需完成。真机已确认各外设初始化，但屏幕实际画面、触摸操作、扬声器/麦克风音质、拍照画质和联网到路由器尚未验收。
+边界也要说清楚：`NaboFace`、`DesktopUi` 和屏内 Wi-Fi 配网页目前已经能参与编译，但**还没有挂入 XiaoZhi 的实际页面生命周期与网络服务**；SD 卡挂载和 LVGL 文件系统桥也仍需完成。真机已确认各外设初始化。**2026-09-23 晚**：桌面 **横滑切页已通**；点触曾因双重旋转变换错位，已修并再烧录，**点控精度待人工确认**（详见第 9 节）。扬声器/麦克风音质、拍照画质和联网到路由器仍未验收。
 
 ## 2. 固定基线
 
@@ -115,7 +115,9 @@ idf.py -p <串口> flash monitor
 
 1. 已识别本机 ESP32-P4 Rev 1.3，应使用 `nabo-tab5`；Rev >= 3 设备才用 `nabo-tab5-p4x`。
 2. 已烧录提交 `fcd3154` 的 CI 产物并确认启动至配网模式，详见第 8 节。
-3. 请人工验证实际显示、触摸坐标、背光、扬声器/双麦、拍照画质、连接路由器与休眠唤醒。
+3. **点触精度**（见第 9 节）：菜单 / 磁贴 / 返回是否点得准；若仍偏，记录「点哪里→响应哪里」。
+4. **横滑**：主页横滑进应用、子页横滑返回（本地已通，回归即可）。
+5. 请人工验证背光、扬声器/双麦、拍照画质、连接路由器与休眠唤醒。
 4. SC202CS 默认 IPA 配置中的越界系数 `4.5445` 和自动白平衡增益叠加后的越界已修正；复测 22 秒内自检抓帧 150 帧、CCM 错误 0。仍需用实际样张验证颜色与暗光表现。
 5. 核查 esp-hosted 提示的 Host `2.12.0` / C6 co-processor `0.0.0` 版本不一致；当前 SDIO 初始化及热点启动成功，升级 C6 前先确认实际固件版本和官方升级流程。
 6. 特别观察 ST7121/ST7123 设备上 I2C 是否仍出现复位或超时。
@@ -186,4 +188,28 @@ idf.py -p <串口> flash monitor
 C6/联网：
 SD/NABO 表情：
 异常串口日志：
+```
+
+## 9. 2026-09-23 晚 · 本地滑动 / 点触联调
+
+本地工作树：`D:\tab5\xiaozhi-esp32`，SKU `nabo/tab5 --name nabo-tab5`，烧录 **COM5**（ESP32-P4 USB-Serial/JTAG）。
+
+| 症状 | 根因 | 处理 | 状态 |
+|---|---|---|---|
+| 页面横滑无反应 | ① 页面挂 `LV_OBJ_FLAG_GESTURE_BUBBLE`，`LV_EVENT_GESTURE` 被弹到 screen；② `face_host`/`icon_box` 等吞掉按压事件；③ 竖向阈值过严 + 双路径连切 | 页面自身处理手势；装饰层 `pass_through`；触摸 read_cb **直接识别横滑**并切页；主页左右横滑进应用 | **已通** |
+| 点触错位 | LVGL 9 `indev_pointer_proc()` 内已有 `lv_display_rotate_point()`，read_cb 又手动旋转 → **双重旋转** | read_cb 只交 **原始面板坐标**，UI 坐标交给 LVGL；滑动位移与 `lv_display_rotate_point` 对齐 | **已修，待确认** |
+
+**给后来人的坑（务必看）**：
+1. LVGL 9 触摸 read_cb **不要**再做旋转变换，除非显示 `rotation==0`。
+2. `LV_OBJ_FLAG_GESTURE_BUBBLE` 表示「把手势交给父节点」；**页面应处理手势，子控件才 bubble**。
+3. 装饰/全屏宿主（`face_host` 等）应 `lv_obj_clear_flag(CLICKABLE|SCROLLABLE)`，避免吞事件。
+4. TP_INT 在部分 ST7121 批次可能不触发；TIMER 轮询更稳。
+5. 滑动与点控共用触摸流；判定横滑建议 `|dx|≥50` 且 `2|dx|≥|dy|`，并加冷却防 GESTURE+RELEASED 双触发。
+
+**本地调试开关**：`nabo_tab5.cc` 触摸 read_cb 有 `touch raw=` / `swipe raw=` 日志；`desktop_ui.cc` 的 `HandleSwipe` 有 `dx/dy/page` 日志。点不准时先抓这两类 log。
+
+**本地烧录（app 分区）**：
+```bat
+cd /d D:\tab5\xiaozhi-esp32\build
+python -m esptool --chip esp32p4 -p COM5 write-flash 0x20000 xiaozhi.bin
 ```
