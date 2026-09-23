@@ -12,7 +12,7 @@
 - 带 Wi-Fi 列表、密码软键盘和异步连接结果的设置页组件
 - 固定 XiaoZhi 上游提交，GitHub Actions 使用 ESP-IDF 6.1 编译两个固件变体
 
-2026-09-22 的首次双变体 CI 已通过；`nabo-tab5` app 为 `0x387410` 字节，`nabo-tab5-p4x` 为 `0x38d030` 字节，两个 4MB app 分区都保留约 10% 空间。
+双变体 CI 已通过，[2026-09-23 构建](https://github.com/Liutupi/nabo-tab5/actions/runs/35835524120)还验证了 Rev 1.x 专用 ISP 库的实际链接。`nabo-tab5` 已在 P4 Rev 1.3 真机启动至配网模式，摄像头自检成功抓帧；目前仍有相机色彩矩阵越界报错及 C6 固件版本警告，详见 [HANDOFF.md](HANDOFF.md)。
 
 产品层尚在接线阶段：桌面、表情和屏内配网页仍需挂到 XiaoZhi 的实际页面、SD/LVGL 文件系统和网络服务。详细状态见 [HANDOFF.md](HANDOFF.md)。
 
