@@ -48,6 +48,11 @@ jobs:
           source "$IDF_PATH/export.sh"
           cd work/xiaozhi-esp32
           python scripts/build.py nabo/tab5 --name "${{ matrix.variant }}"
+          if [ "${{ matrix.variant }}" = "nabo-tab5" ]; then
+            grep -F 'libesp_ipa_p4_less_v3.a(' build/xiaozhi.map
+          else
+            grep -F '/libesp_ipa.a(' build/xiaozhi.map
+          fi
 
       - name: Upload firmware and debug symbols
         uses: actions/upload-artifact@v4
