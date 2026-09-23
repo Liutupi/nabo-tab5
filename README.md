@@ -14,6 +14,8 @@
 
 双变体 CI 已通过，[2026-09-23 构建](https://github.com/Liutupi/nabo-tab5/actions/runs/35837740853)还验证了 Rev 1.x 专用 ISP 库的实际链接。`nabo-tab5` 已在 P4 Rev 1.3 真机启动至配网模式，摄像头自检成功抓帧且色彩矩阵越界报错消失；C6 固件版本仍有警告，显示/触摸交互和实际拍照画质尚待人工验收，详见 [HANDOFF.md](HANDOFF.md)。
 
+本次已验证快照：[tab5-rev1-smoke-2026-09-23 预发布包](https://github.com/Liutupi/nabo-tab5/releases/tag/tab5-rev1-smoke-2026-09-23)。其中的合并固件仅适用于 ESP32-P4 Rev < 3。
+
 产品层尚在接线阶段：桌面、表情和屏内配网页仍需挂到 XiaoZhi 的实际页面、SD/LVGL 文件系统和网络服务。详细状态见 [HANDOFF.md](HANDOFF.md)。
 
 ## 硬件

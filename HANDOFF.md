@@ -6,6 +6,12 @@
 >
 > 目标硬件：M5Stack Tab5（ESP32-P4 + ESP32-C6）
 
+## 0. 冻结快照
+
+- 标签：[tab5-rev1-smoke-2026-09-23](https://github.com/Liutupi/nabo-tab5/releases/tag/tab5-rev1-smoke-2026-09-23)，固定本次代码、构建脚本和交接记录。
+- 预发布包附带 `nabo-tab5-rev1-merged.bin`，来自已在 ESP32-P4 Rev 1.3 真机烧录验证的提交 `fcd3154`；SHA-256 见第 8 节。该固件**只适用于 Rev < 3**，不是功能全部验收的正式版。
+- 烧录合并固件会覆盖设备配置分区，原有 Wi-Fi 等设置需要重新配置。Rev >= 3 设备请使用 CI 的 `nabo-tab5-p4x` 变体，不要烧录上述 Rev 1 固件。
+
 ## 1. 当前结论
 
 仓库已经从“板级草图”升级为**可安装到 XiaoZhi 源码树的板级 overlay**：
