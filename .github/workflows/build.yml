@@ -49,9 +49,13 @@ jobs:
           cd work/xiaozhi-esp32
           python scripts/build.py nabo/tab5 --name "${{ matrix.variant }}"
 
-      - name: Upload merged firmware
+      - name: Upload firmware and debug symbols
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.variant }}-${{ github.sha }}
-          path: work/xiaozhi-esp32/build/merged-binary.bin
+          path: |
+            work/xiaozhi-esp32/build/merged-binary.bin
+            work/xiaozhi-esp32/build/xiaozhi.elf
+            work/xiaozhi-esp32/build/xiaozhi.map
+            work/xiaozhi-esp32/sdkconfig
           if-no-files-found: error
